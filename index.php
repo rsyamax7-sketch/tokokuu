@@ -1,6 +1,39 @@
 <?php
 // index.php
 require_once 'koneksi.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Cek apakah sudah login sebagai admin (opsional proteksi)
+// if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+//     header("Location: login.php");
+//     exit();
+// }
+
+// PROSES EDIT TRANSAKSI
+if (isset($_POST['edit_transaksi'])) {
+    $id_trx  = intval($_POST['id_transaksi']);
+    $tgl     = mysqli_real_escape_string($koneksi, $_POST['tanggal']);
+    $total   = floatval($_POST['total_belanja']);
+
+    if ($id_trx > 0 && $total > 0) {
+        mysqli_query($koneksi, "UPDATE tbl_transaksi SET tanggal = '$tgl', total_belanja = '$total' WHERE id_transaksi = $id_trx");
+        header("Location: index.php?status=sukses_edit");
+        exit();
+    }
+}
+
+// PROSES HAPUS TRANSAKSI
+if (isset($_GET['hapus'])) {
+    $id_trx = intval($_GET['hapus']);
+    if ($id_trx > 0) {
+        mysqli_query($koneksi, "DELETE FROM tbl_detail_transaksi WHERE id_transaksi = $id_trx");
+        mysqli_query($koneksi, "DELETE FROM tbl_transaksi WHERE id_transaksi = $id_trx");
+        header("Location: index.php?status=sukses_hapus");
+        exit();
+    }
+}
 
 // Ambil ringkasan data dari database
 $q_total_trx  = mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM tbl_transaksi");
@@ -59,30 +92,35 @@ $data_transaksi = mysqli_query($koneksi, $query_view);
                     <i class="fa-solid fa-chart-pie text-xs"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#tabel-transaksi" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800/60 hover:text-white transition">
+                 <a href="laporan_penjualan.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800/60 hover:text-white transition">
                     <i class="fa-solid fa-receipt text-xs text-slate-400"></i>
                     <span>Laporan Penjualan</span>
                 </a>
                 <a href="data_produk.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800/60 hover:text-white transition">
                     <i class="fa-solid fa-box-archive text-xs text-slate-400"></i>
-                    <span>Data Produk</span>
+                    <span>Data Produk &amp; Kasir</span>
                 </a>
-                <a href="data_pelanggan.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800/60 hover:text-white transition">
+                 <a href="data_pelanggan.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800/60 hover:text-white transition">
                     <i class="fa-solid fa-users text-xs text-slate-400"></i>
                     <span>Data Pelanggan</span>
                 </a>
             </nav>
         </div>
 
-        <!-- USER PROFILE FOOTER -->
-        <div class="border-t border-slate-800/80 pt-4 flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-slate-800 text-indigo-400 font-bold flex items-center justify-center text-xs border border-slate-700">
-                AD
+        <!-- USER PROFILE & LOGOUT FOOTER -->
+        <div class="border-t border-slate-800/80 pt-4 space-y-3">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-slate-800 text-indigo-400 font-bold flex items-center justify-center text-xs border border-slate-700">
+                    AD
+                </div>
+                <div class="text-xs leading-tight">
+                    <p class="font-semibold text-slate-200"><?= $_SESSION['nama_lengkap'] ?? 'Administrator'; ?></p>
+                    <p class="text-slate-400 text-[11px] mt-0.5">admin@tokokita.com</p>
+                </div>
             </div>
-            <div class="text-xs leading-tight">
-                <p class="font-semibold text-slate-200">Administrator</p>
-                <p class="text-slate-400 text-[11px] mt-0.5">admin@tokokita.com</p>
-            </div>
+            <a href="logout.php" onclick="return confirm('Yakin ingin keluar dari sistem?')" class="w-full bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition border border-red-500/20">
+                <i class="fa-solid fa-right-from-bracket text-[10px]"></i> Logout / Keluar
+            </a>
         </div>
     </aside>
 
@@ -92,29 +130,26 @@ $data_transaksi = mysqli_query($koneksi, $query_view);
         <!-- HEADER TOPBAR -->
         <header class="bg-white border-b border-slate-200/80 px-8 py-4 flex items-center justify-between shrink-0">
             <div>
-                <h1 class="text-lg font-bold text-slate-800 tracking-tight">Dashboard Ringkasan</h1>
-                <p class="text-xs text-slate-400 mt-0.5">Database Terhubung: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-mono text-[11px]">db_tokoku</code></p>
+                <h1 class="text-lg font-bold text-slate-800 tracking-tight">Dashboard &amp; Laporan Penjualan</h1>
+                <p class="text-xs text-slate-400 mt-0.5">Basis Data: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-mono text-[11px]">db_tokoku</code></p>
             </div>
-            <button onclick="bukaModalTambah()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm shadow-indigo-600/20 transition">
-                <i class="fa-solid fa-plus text-[10px]"></i> Tambah Transaksi
-            </button>
         </header>
 
         <!-- AREA KONTEN (SCROLLABLE) -->
         <main class="flex-1 overflow-y-auto p-8 space-y-6">
 
-            <!-- NOTIFIKASI BERHASIL -->
-            <?php if (isset($_GET['status']) && $_GET['status'] === 'success'): ?>
+            <!-- NOTIFIKASI -->
+            <?php if (isset($_GET['status'])): ?>
                 <div class="bg-emerald-50 border border-emerald-200/70 text-emerald-800 px-4 py-3 rounded-2xl text-xs flex items-center justify-between shadow-xs">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
-                        <span><strong>Sukses!</strong> Data transaksi baru berhasil dicatat ke database.</span>
+                        <span><strong>Sukses!</strong> Aksi transaksi berhasil diproses.</span>
                     </div>
                     <a href="index.php" class="text-emerald-600 hover:text-emerald-900"><i class="fa-solid fa-xmark text-sm"></i></a>
                 </div>
             <?php endif; ?>
 
-            <!-- KARTU STATISTIK (4 GRID) -->
+            <!-- KARTU STATISTIK -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div class="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center justify-between">
                     <div>
@@ -157,15 +192,12 @@ $data_transaksi = mysqli_query($koneksi, $query_view);
                 </div>
             </div>
 
-            <!-- SECTION GRAFIK ANALISIS -->
+            <!-- GRAFIK -->
             <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-2xs">
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <h3 class="font-bold text-slate-800 text-sm">Grafik Analisis Tren Penjualan</h3>
                         <p class="text-xs text-slate-400 mt-0.5">Visualisasi omset bulanan sistem toko</p>
-                    </div>
-                    <div class="flex items-center gap-2 text-[11px] font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/60">
-                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block"></span> Omset Bulanan
                     </div>
                 </div>
                 <div class="h-64">
@@ -180,33 +212,41 @@ $data_transaksi = mysqli_query($koneksi, $query_view);
                         <h3 class="font-bold text-slate-800 text-sm">Riwayat Transaksi Penjualan</h3>
                         <p class="text-xs text-slate-400 mt-0.5">Sumber Data: View <code class="text-indigo-600 font-mono">view_transaksi_pelanggan</code></p>
                     </div>
-                    <span class="bg-indigo-50 text-indigo-700 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-indigo-100">Live Database</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr class="bg-slate-50/70 border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
-                                <th class="py-3 px-6">ID TRX</th>
-                                <th class="py-3 px-6">Tanggal</th>
-                                <th class="py-3 px-6">Pelanggan</th>
-                                <th class="py-3 px-6">Kota</th>
-                                <th class="py-3 px-6 text-right">Total Belanja</th>
+                                <th class="py-3.5 px-6">ID TRX</th>
+                                <th class="py-3.5 px-6">Tanggal</th>
+                                <th class="py-3.5 px-6">Pelanggan</th>
+                                <th class="py-3.5 px-6">Kota</th>
+                                <th class="py-3.5 px-6 text-right">Total Belanja</th>
+                                <th class="py-3.5 px-6 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 text-slate-600 font-medium">
                             <?php if (mysqli_num_rows($data_transaksi) > 0): ?>
                                 <?php while ($row = mysqli_fetch_assoc($data_transaksi)): ?>
                                     <tr class="hover:bg-slate-50/60 transition">
-                                        <td class="py-3.5 px-6 font-bold text-slate-800">#TRX-<?= str_pad($row['id_transaksi'], 3, '0', STR_PAD_LEFT); ?></td>
-                                        <td class="py-3.5 px-6 text-slate-400"><?= $row['tanggal']; ?></td>
-                                        <td class="py-3.5 px-6 text-slate-800 font-semibold"><?= htmlspecialchars($row['nama_pelanggan']); ?></td>
-                                        <td class="py-3.5 px-6"><span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px]"><?= htmlspecialchars($row['kota']); ?></span></td>
-                                        <td class="py-3.5 px-6 text-right font-bold text-indigo-600">Rp <?= number_format($row['total_belanja'], 0, ',', '.'); ?></td>
+                                        <td class="py-4 px-6 font-bold text-slate-800">#TRX-<?= str_pad($row['id_transaksi'], 3, '0', STR_PAD_LEFT); ?></td>
+                                        <td class="py-4 px-6 text-slate-400"><?= $row['tanggal']; ?></td>
+                                        <td class="py-4 px-6 text-slate-800 font-semibold"><?= htmlspecialchars($row['nama_pelanggan']); ?></td>
+                                        <td class="py-4 px-6"><span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px]"><?= htmlspecialchars($row['kota']); ?></span></td>
+                                        <td class="py-4 px-6 text-right font-bold text-indigo-600">Rp <?= number_format($row['total_belanja'], 0, ',', '.'); ?></td>
+                                        <td class="py-4 px-6 text-center space-x-2">
+                                            <button onclick="bukaModalEdit(<?= $row['id_transaksi']; ?>, '<?= $row['tanggal']; ?>', <?= $row['total_belanja']; ?>)" class="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2.5 py-1.5 rounded-lg border border-amber-200 transition font-semibold" title="Edit">
+                                                <i class="fa-solid fa-pen-to-square"></i> Edit
+                                            </button>
+                                            <a href="index.php?hapus=<?= $row['id_transaksi']; ?>" onclick="return confirm('Yakin ingin menghapus riwayat transaksi ini?')" class="bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200 transition font-semibold inline-block" title="Hapus">
+                                                <i class="fa-solid fa-trash"></i> Hapus
+                                            </a>
+                                        </td>
                                     </tr>
                                 <?php endwhile; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="5" class="py-8 text-center text-slate-400">Belum ada data transaksi.</td>
+                                    <td colspan="6" class="py-8 text-center text-slate-400">Belum ada data transaksi.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -217,50 +257,45 @@ $data_transaksi = mysqli_query($koneksi, $query_view);
         </main>
     </div>
 
-    <!-- MODAL FORM TAMBAH TRANSAKSI -->
-    <div id="modalTambah" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center hidden z-50 p-4">
+    <!-- MODAL EDIT TRANSAKSI -->
+    <div id="modalEdit" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Tambah Transaksi Baru</h3>
-                <button onclick="tutupModalTambah()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+                <h3 class="font-bold text-slate-800 text-sm">Edit Data Transaksi</h3>
+                <button onclick="tutupModalEdit()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
             
-            <form action="tambah_transaksi.php" method="POST" class="p-6 space-y-4 text-xs">
-                <div>
-                    <label class="block font-semibold text-slate-600 mb-1">Nama Pelanggan</label>
-                    <input type="text" name="nama_pelanggan" required placeholder="Masukkan nama pelanggan" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none text-slate-800">
-                </div>
-                <div>
-                    <label class="block font-semibold text-slate-600 mb-1">Kota</label>
-                    <input type="text" name="kota" required placeholder="Contoh: Ponorogo, Madiun" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none text-slate-800">
-                </div>
+            <form action="" method="POST" class="p-6 space-y-4 text-xs">
+                <input type="hidden" id="editIdTrx" name="id_transaksi">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">Tanggal Transaksi</label>
-                    <input type="date" name="tanggal" required value="<?= date('Y-m-d'); ?>" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none text-slate-800">
+                    <input type="date" id="editTanggal" name="tanggal" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none text-slate-800">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1">Total Belanja (Rp)</label>
-                    <input type="number" name="total_belanja" min="0" step="1000" required placeholder="Contoh: 150000" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none text-slate-800">
+                    <input type="number" id="editTotal" name="total_belanja" min="0" step="500" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none text-slate-800 font-bold">
                 </div>
 
-                <div class="pt-2 flex items-center justify-end gap-3">
-                    <button type="button" onclick="tutupModalTambah()" class="px-4 py-2 font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
-                    <button type="submit" class="px-4 py-2 font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition shadow-sm">Simpan Transaksi</button>
+                <div class="pt-2 flex items-center justify-end gap-3 border-t border-slate-100">
+                    <button type="button" onclick="tutupModalEdit()" class="px-4 py-2 font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
+                    <button type="submit" name="edit_transaksi" class="px-5 py-2 font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition shadow-sm">Simpan Perubahan</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- JAVASCRIPT & CHART.JS -->
+    <!-- SCRIPT GRAFIK & MODAL -->
     <script>
-        function bukaModalTambah() {
-            document.getElementById('modalTambah').classList.remove('hidden');
+        function bukaModalEdit(id, tanggal, total) {
+            document.getElementById('editIdTrx').value = id;
+            document.getElementById('editTanggal').value = tanggal;
+            document.getElementById('editTotal').value = total;
+            document.getElementById('modalEdit').classList.remove('hidden');
         }
-        function tutupModalTambah() {
-            document.getElementById('modalTambah').classList.add('hidden');
+        function tutupModalEdit() {
+            document.getElementById('modalEdit').classList.add('hidden');
         }
 
-        // Inisialisasi Grafik Chart.js
         const ctx = document.getElementById('grafikPenjualan').getContext('2d');
         new Chart(ctx, {
             type: 'line',
@@ -281,21 +316,14 @@ $data_transaksi = mysqli_query($koneksi, $query_view);
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
+                plugins: { legend: { display: false } },
                 scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 10 } }
-                    },
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
                     y: {
                         grid: { color: '#f1f5f9' },
                         ticks: {
                             font: { size: 10 },
-                            callback: function(value) {
-                                return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
-                            }
+                            callback: function(value) { return 'Rp ' + (value / 1000000).toFixed(1) + 'jt'; }
                         }
                     }
                 }
